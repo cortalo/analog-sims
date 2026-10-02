@@ -1,0 +1,6 @@
+.venv/
+pdk
+__pycache__/
+*.raw
+*.dat
+.DS_Store

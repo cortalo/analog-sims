@@ -1,0 +1,33 @@
+* FO4 delay, SKY130 tt 1.8 V 27 C: a chain of inverters each 4x the previous.
+* Stage 3 is the device under test: its input edge comes from an FO4 stage
+* and it drives an FO4 load, which itself drives FO4.
+.lib "pdk/libs.tech/ngspice/sky130.lib.spice" tt
+.param wn=1 wp=2
+
+.subckt inv in out vdd s=1
+XMN out in 0   0   sky130_fd_pr__nfet_01v8 L=0.15 W={wn*s} nf={s}
+XMP out in vdd vdd sky130_fd_pr__pfet_01v8 L=0.15 W={wp*s} nf={s}
+.ends
+
+Vdd vdd 0 1.8
+Vin n0 0 pulse(0 1.8 200p 20p 20p 980p 2n)
+X1 n0 n1 vdd inv s=1
+X2 n1 n2 vdd inv s=4
+X3 n2 n3 vdd inv s=16
+X4 n3 n4 vdd inv s=64
+X5 n4 n5 vdd inv s=256
+
+.control
+set wr_singlescale
+set wr_vecnames
+tran 0.2p 4n
+* n2 rises -> n3 falls, and n2 falls -> n3 rises (second period, settled)
+meas tran tphl trig v(n2) val=0.9 rise=2 targ v(n3) val=0.9 fall=2
+meas tran tplh trig v(n2) val=0.9 fall=2 targ v(n3) val=0.9 rise=2
+meas tran tf3 trig v(n3) val=1.44 fall=2 targ v(n3) val=0.36 fall=2
+meas tran tr3 trig v(n3) val=0.36 rise=2 targ v(n3) val=1.44 rise=2
+let fo4 = (tphl + tplh) / 2
+print fo4
+wrdata sims/inverter/fo4.dat v(n1) v(n2) v(n3) v(n4)
+.endc
+.end

@@ -1,0 +1,19 @@
+* SKY130 inverter hello world: DC transfer curve and a transient
+.lib "pdk/libs.tech/ngspice/sky130.lib.spice" tt
+.param wn=1 wp=2
+
+Vdd vdd 0 1.8
+Vin in 0 pulse(0 1.8 100p 50p 50p 450p 1n)
+XMN out in 0   0   sky130_fd_pr__nfet_01v8 L=0.15 W={wn}
+XMP out in vdd vdd sky130_fd_pr__pfet_01v8 L=0.15 W={wp}
+Cl out 0 5f
+
+.control
+set wr_singlescale
+set wr_vecnames
+dc Vin 0 1.8 0.01
+wrdata sims/inverter/vtc.dat v(in) v(out)
+tran 1p 2n
+wrdata sims/inverter/tran.dat v(in) v(out)
+.endc
+.end
